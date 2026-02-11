@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SupplierGraph | Tariff Benchmarking & Anomaly Detection | Bill Up</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f59e0b;
+            --primary-glow: rgba(245, 158, 11, 0.4);
+            --secondary: #8b5cf6;
+            --accent: #10b981;
+            --tertiary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-elevated: #1a1a24;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border: #2a2a3a;
+            --graph-gradient: linear-gradient(135deg, #f59e0b 0%, #8b5cf6 50%, #10b981 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 0% 0%, rgba(245, 158, 11, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 100% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+        }
+
+        .header {
+            background: linear-gradient(180deg, rgba(245, 158, 11, 0.06) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+
+        .header-content {
+            max-width: 1900px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--graph-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 0 30px var(--primary-glow);
+        }
+
+        .logo-text {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: var(--graph-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-subtitle {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .header-badges {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .badge {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .badge.live {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .badge.live::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+            margin-right: 6px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main {
+            max-width: 1900px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 0.4rem;
+            background: var(--graph-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 1400px) {
+            .workspace { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(180deg, rgba(39, 39, 42, 0.8) 0%, transparent 100%);
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-body { padding: 1.25rem; }
+
+        /* Knowledge Graph Visualization */
+        .graph-container {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .graph-canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .graph-node {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .graph-node:hover {
+            transform: scale(1.15);
+            z-index: 20;
+        }
+
+        .graph-node.supplier {
+            background: linear-gradient(135deg, var(--primary), #d97706);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .graph-node.category {
+            background: linear-gradient(135deg, var(--secondary), #7c3aed);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .graph-node.anomaly {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+            animation: anomalyPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes anomalyPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); }
+        }
+
+        .graph-node.center {
+            background: linear-gradient(135deg, var(--accent), #059669);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .node-label {
+            position: absolute;
+            bottom: -22px;
+            white-space: nowrap;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            width: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .node-icon {
+            font-size: 1rem;
+            color: white;
+        }
+
+        .graph-edge {
+            position: absolute;
+            background: var(--border);
+            height: 2px;
+            transform-origin: left center;
+            z-index: 1;
+        }
+
+        .graph-edge.anomaly {
+            background: var(--danger);
+            height: 3px;
+            animation: edgePulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes edgePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Benchmark Controls */
+        .benchmark-controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .category-btn {
+            padding: 0.75rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .category-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .category-btn.active {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .category-icon {
+            font-size: 1.2rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        /* Anomaly Alerts */
+        .anomaly-section {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .anomaly-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .anomaly-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .anomaly-count {
+            background: var(--danger);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .anomaly-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .anomaly-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-dark);
+            border-radius: 8px;
+            border-left: 3px solid var(--danger);
+        }
+
+        .anomaly-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .anomaly-content {
+            flex: 1;
+        }
+
+        .anomaly-supplier {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .anomaly-detail {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .anomaly-variance {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--danger);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Price Comparison Table */
+        .comparison-section {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .comparison-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 0.6rem 0.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+        }
+
+        .comparison-table tr:hover {
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .price-cell {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        .price-low { color: var(--accent); }
+        .price-normal { color: var(--text-primary); }
+        .price-high { color: var(--danger); }
+
+        .variance-badge {
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .variance-positive {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .variance-negative {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 0.85rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .control-btn:hover {
+            border-color: var(--primary);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .control-btn.primary {
+            background: var(--graph-gradient);
+            border: none;
+            color: white;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+
+        .metric-card {
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--graph-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .metric-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 0.2rem;
+        }
+
+        /* Supplier Distribution */
+        .distribution-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .distribution-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .distribution-label {
+            width: 80px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .distribution-bar {
+            flex: 1;
+            height: 20px;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .distribution-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 6px;
+        }
+
+        .distribution-fill.plomberie { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .distribution-fill.electricite { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+        .distribution-fill.materiaux { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+        .distribution-fill.energie { background: linear-gradient(90deg, #10b981, #059669); }
+
+        .distribution-value {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Savings Potential */
+        .savings-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .savings-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .savings-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .savings-detail {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.85rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .toast-message {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Tooltip */
+        .node-tooltip {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+            min-width: 180px;
+        }
+
+        .node-tooltip.show {
+            opacity: 1;
+        }
+
+        .tooltip-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .tooltip-label {
+            color: var(--text-muted);
+        }
+
+        .tooltip-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">🕸️</div>
+                <div>
+                    <div class="logo-text">SupplierGraph</div>
+                    <div class="logo-subtitle">Bill Up Research Demo</div>
+                </div>
+            </div>
+            <div class="header-badges">
+                <span class="badge live">● Analyzing</span>
+                <span class="badge">Knowledge Graph</span>
+                <span class="badge">Neo4j + GNN</span>
+                <span class="badge">3 Anomalies</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="hero">
+            <h1>🕸️ Supplier Knowledge Graph & Tariff Benchmarking</h1>
+            <p>Graph-based price intelligence with anomaly detection — identify excessive pricing across 8,000+ supplier relationships</p>
+        </div>
+
+        <div class="workspace">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🔗 Supplier Relationship Graph</h3>
+                    <span style="font-size: 0.7rem; color: var(--text-muted); font-family: 'JetBrains Mono';">847 suppliers • 12,463 edges</span>
+                </div>
+                <div class="card-body">
+                    <div class="benchmark-controls">
+                        <button class="category-btn active" onclick="selectCategory('all')">
+                            <span class="category-icon">🔍</span>
+                            All
+                        </button>
+                        <button class="category-btn" onclick="selectCategory('plomberie')">
+                            <span class="category-icon">🔧</span>
+                            Plomberie
+                        </button>
+                        <button class="category-btn" onclick="selectCategory('electricite')">
+                            <span class="category-icon">⚡</span>
+                            Électricité
+                        </button>
+                        <button class="category-btn" onclick="selectCategory('materiaux')">
+                            <span class="category-icon">🧱</span>
+                            Matériaux
+                        </button>
+                    </div>
+
+                    <div class="graph-container" id="graphContainer">
+                        <div class="graph-canvas" id="graphCanvas">
+                            <!-- Center node (your business) -->
+                            <div class="graph-node center" style="width: 60px; height: 60px; left: calc(50% - 30px); top: calc(50% - 30px);" onmouseenter="showTooltip(event, 'Mon Entreprise', '€127,450/mois', '47 fournisseurs')" onmouseleave="hideTooltip()">
+                                <span class="node-icon">🏢</span>
+                                <span class="node-label">Mon Entreprise</span>
+                            </div>
+                            
+                            <!-- Category nodes -->
+                            <div class="graph-node category" style="width: 45px; height: 45px; left: 15%; top: 20%;" onmouseenter="showTooltip(event, 'Plomberie', '€34,200/mois', '12 fournisseurs')" onmouseleave="hideTooltip()">
+                                <span class="node-icon">🔧</span>
+                                <span class="node-label">Plomberie</span>
+                            </div>
+                            <div class="graph-node category" style="width: 45px; height: 45px; left: 75%; top: 15%;" onmouseenter="showTooltip(event, 'Électricité', '€28,500/mois', '8 fournisseurs')" onmouseleave="hideTooltip()">
+                                <span class="node-icon">⚡</span>
+                                <span class="node-label">Électricité</span>
+                            </div>
+                            <div class="graph-node category" style="width: 45px; height: 45px; left: 80%; top: 70%;" onmouseenter="showTooltip(event, 'Matériaux', '€45,800/mois', '18 fournisseurs')" onmouseleave="hideTooltip()">
+                                <span class="node-icon">🧱</span>
+                                <span class="node-label">Matériaux</span>
+                            </div>
+                            <div class="graph-node category" style="width: 45px; height: 45px; left: 10%; top: 75%;" onmouseenter="showTooltip(event, 'Énergie', '€18,950/mois', '4 fournisseurs')" onmouseleave="hideTooltip()">
+                                <span class="node-icon">🔋</span>
+                                <span class="node-label">Énergie</span>
+                            </div>
+
+                            <!-- Supplier nodes -->
+                            <div class="graph-node supplier" style="width: 32px; height: 32px; left: 8%; top: 35%;" onmouseenter="showTooltip(event, 'Plomberie Martin', '€8,450/mois', 'Prix normal')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.8rem;">🏭</span>
+                            </div>
+                            <div class="graph-node supplier" style="width: 32px; height: 32px; left: 25%; top: 8%;" onmouseenter="showTooltip(event, 'Sanitaire Plus', '€5,200/mois', 'Prix bas')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.8rem;">🏭</span>
+                            </div>
+                            <div class="graph-node anomaly" style="width: 36px; height: 36px; left: 5%; top: 55%;" onmouseenter="showTooltip(event, 'Chauffage Express', '€12,300/mois', '+47% vs marché')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.9rem;">⚠️</span>
+                                <span class="node-label" style="color: var(--danger);">+47% ⚠️</span>
+                            </div>
+                            
+                            <div class="graph-node supplier" style="width: 32px; height: 32px; left: 65%; top: 5%;" onmouseenter="showTooltip(event, 'Elec Pro', '€14,200/mois', 'Prix normal')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.8rem;">🏭</span>
+                            </div>
+                            <div class="graph-node supplier" style="width: 32px; height: 32px; left: 88%; top: 30%;" onmouseenter="showTooltip(event, 'Lumière SARL', '€8,100/mois', 'Prix normal')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.8rem;">🏭</span>
+                            </div>
+                            <div class="graph-node anomaly" style="width: 36px; height: 36px; left: 90%; top: 55%;" onmouseenter="showTooltip(event, 'Cable Premium', '€6,200/mois', '+32% vs marché')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.9rem;">⚠️</span>
+                                <span class="node-label" style="color: var(--danger);">+32% ⚠️</span>
+                            </div>
+
+                            <div class="graph-node supplier" style="width: 32px; height: 32px; left: 70%; top: 85%;" onmouseenter="showTooltip(event, 'Bricomat', '€22,400/mois', 'Prix normal')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.8rem;">🏭</span>
+                            </div>
+                            <div class="graph-node supplier" style="width: 32px; height: 32px; left: 92%; top: 82%;" onmouseenter="showTooltip(event, 'Matériaux Pro', '€15,600/mois', 'Prix bas')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.8rem;">🏭</span>
+                            </div>
+
+                            <div class="graph-node supplier" style="width: 32px; height: 32px; left: 20%; top: 85%;" onmouseenter="showTooltip(event, 'EDF Pro', '€12,450/mois', 'Prix normal')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.8rem;">🏭</span>
+                            </div>
+                            <div class="graph-node anomaly" style="width: 36px; height: 36px; left: 3%; top: 88%;" onmouseenter="showTooltip(event, 'Gaz Premium', '€6,500/mois', '+28% vs marché')" onmouseleave="hideTooltip()">
+                                <span class="node-icon" style="font-size: 0.9rem;">⚠️</span>
+                                <span class="node-label" style="color: var(--danger);">+28% ⚠️</span>
+                            </div>
+                        </div>
+                        <div class="node-tooltip" id="nodeTooltip">
+                            <div class="tooltip-title" id="tooltipTitle">Supplier</div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Dépenses</span>
+                                <span class="tooltip-value" id="tooltipSpend">€0</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Statut</span>
+                                <span class="tooltip-value" id="tooltipStatus">Normal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="anomaly-section">
+                        <div class="anomaly-header">
+                            <span class="anomaly-title">
+                                🚨 Price Anomalies Detected
+                                <span class="anomaly-count">3</span>
+                            </span>
+                        </div>
+                        <div class="anomaly-list">
+                            <div class="anomaly-item">
+                                <div class="anomaly-icon">🔧</div>
+                                <div class="anomaly-content">
+                                    <div class="anomaly-supplier">Chauffage Express</div>
+                                    <div class="anomaly-detail">Installation chaudière • Benchmark: €2,450 • Facturé: €3,600</div>
+                                </div>
+                                <div class="anomaly-variance">+47%</div>
+                            </div>
+                            <div class="anomaly-item">
+                                <div class="anomaly-icon">⚡</div>
+                                <div class="anomaly-content">
+                                    <div class="anomaly-supplier">Cable Premium</div>
+                                    <div class="anomaly-detail">Câblage électrique • Benchmark: €85/m • Facturé: €112/m</div>
+                                </div>
+                                <div class="anomaly-variance">+32%</div>
+                            </div>
+                            <div class="anomaly-item">
+                                <div class="anomaly-icon">🔋</div>
+                                <div class="anomaly-content">
+                                    <div class="anomaly-supplier">Gaz Premium</div>
+                                    <div class="anomaly-detail">Contrat gaz • Benchmark: €0.068/kWh • Facturé: €0.087/kWh</div>
+                                </div>
+                                <div class="anomaly-variance">+28%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="comparison-section">
+                        <div class="comparison-header">
+                            <span class="comparison-title">📊 Tariff Benchmark Comparison</span>
+                        </div>
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Votre prix</th>
+                                    <th>Marché min</th>
+                                    <th>Marché moy</th>
+                                    <th>Variance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Intervention plomberie</td>
+                                    <td class="price-cell price-normal">€65/h</td>
+                                    <td class="price-cell price-low">€55/h</td>
+                                    <td class="price-cell">€62/h</td>
+                                    <td><span class="variance-badge variance-positive">+5%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Installation chaudière</td>
+                                    <td class="price-cell price-high">€3,600</td>
+                                    <td class="price-cell price-low">€2,200</td>
+                                    <td class="price-cell">€2,450</td>
+                                    <td><span class="variance-badge variance-positive">+47%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Câblage électrique</td>
+                                    <td class="price-cell price-high">€112/m</td>
+                                    <td class="price-cell price-low">€72/m</td>
+                                    <td class="price-cell">€85/m</td>
+                                    <td><span class="variance-badge variance-positive">+32%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Matériaux construction</td>
+                                    <td class="price-cell price-low">€45/m²</td>
+                                    <td class="price-cell price-low">€42/m²</td>
+                                    <td class="price-cell">€52/m²</td>
+                                    <td><span class="variance-badge variance-negative">-13%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Contrat énergie</td>
+                                    <td class="price-cell price-normal">€0.072/kWh</td>
+                                    <td class="price-cell price-low">€0.065/kWh</td>
+                                    <td class="price-cell">€0.068/kWh</td>
+                                    <td><span class="variance-badge variance-positive">+6%</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="controls">
+                        <button class="control-btn primary" onclick="runAnalysis()">🔍 Run Analysis</button>
+                        <button class="control-btn" onclick="exportReport()">📤 Export Report</button>
+                        <button class="control-btn" onclick="suggestAlternatives()">💡 Find Alternatives</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📈 Graph Metrics</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-value">847</div>
+                                <div class="metric-label">Suppliers</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">12.4K</div>
+                                <div class="metric-label">Relationships</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">3</div>
+                                <div class="metric-label">Anomalies</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">97.2%</div>
+                                <div class="metric-label">Coverage</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">💰 Potential Savings</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="savings-card">
+                            <div class="savings-value">€4,850</div>
+                            <div class="savings-label">Monthly savings potential</div>
+                            <div class="savings-detail">
+                                Based on 3 detected price anomalies<br>
+                                Switch to market-rate suppliers
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 Spending by Category</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="distribution-chart">
+                            <div class="distribution-item">
+                                <span class="distribution-label">Matériaux</span>
+                                <div class="distribution-bar">
+                                    <div class="distribution-fill materiaux" style="width: 85%">
+                                        <span class="distribution-value">€45.8K</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="distribution-item">
+                                <span class="distribution-label">Plomberie</span>
+                                <div class="distribution-bar">
+                                    <div class="distribution-fill plomberie" style="width: 65%">
+                                        <span class="distribution-value">€34.2K</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="distribution-item">
+                                <span class="distribution-label">Électricité</span>
+                                <div class="distribution-bar">
+                                    <div class="distribution-fill electricite" style="width: 55%">
+                                        <span class="distribution-value">€28.5K</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="distribution-item">
+                                <span class="distribution-label">Énergie</span>
+                                <div class="distribution-bar">
+                                    <div class="distribution-fill energie" style="width: 35%">
+                                        <span class="distribution-value">€19.0K</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">⚙️ Analysis Config</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; gap: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                                <span style="color: var(--text-secondary);">Graph DB</span>
+                                <span style="font-family: 'JetBrains Mono'; color: var(--primary);">Neo4j 5.0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                                <span style="color: var(--text-secondary);">GNN Model</span>
+                                <span style="font-family: 'JetBrains Mono'; color: var(--primary);">GraphSAGE</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                                <span style="color: var(--text-secondary);">Anomaly Threshold</span>
+                                <span style="font-family: 'JetBrains Mono'; color: var(--primary);">+25%</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                                <span style="color: var(--text-secondary);">Benchmark Source</span>
+                                <span style="font-family: 'JetBrains Mono'; color: var(--primary);">INSEE + FFB</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                                <span style="color: var(--text-secondary);">Last Update</span>
+                                <span style="font-family: 'JetBrains Mono'; color: var(--primary);">2h ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast">
+        <span class="toast-icon">✅</span>
+        <div class="toast-content">
+            <div class="toast-title" id="toastTitle">Success!</div>
+            <div class="toast-message" id="toastMessage">Analysis complete</div>
+        </div>
+    </div>
+
+    <script>
+        let selectedCategory = 'all';
+
+        function selectCategory(category) {
+            selectedCategory = category;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(category) || (category === 'all' && btn.textContent.includes('All'))) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Highlight relevant nodes
+            const nodes = document.querySelectorAll('.graph-node');
+            nodes.forEach(node => {
+                node.style.opacity = category === 'all' ? '1' : '0.3';
+            });
+            
+            // Keep center and selected category visible
+            document.querySelector('.graph-node.center').style.opacity = '1';
+            
+            showToast('Category Selected', `Filtering by ${category}`);
+        }
+
+        function showTooltip(event, name, spend, status) {
+            const tooltip = document.getElementById('nodeTooltip');
+            document.getElementById('tooltipTitle').textContent = name;
+            document.getElementById('tooltipSpend').textContent = spend;
+            document.getElementById('tooltipStatus').textContent = status;
+            
+            const rect = event.target.getBoundingClientRect();
+            const container = document.getElementById('graphContainer').getBoundingClientRect();
+            
+            tooltip.style.left = (rect.left - container.left + 50) + 'px';
+            tooltip.style.top = (rect.top - container.top - 10) + 'px';
+            tooltip.classList.add('show');
+        }
+
+        function hideTooltip() {
+            document.getElementById('nodeTooltip').classList.remove('show');
+        }
+
+        function runAnalysis() {
+            showToast('🔍 Analysis Running', 'Scanning 847 suppliers...');
+            
+            setTimeout(() => {
+                showToast('✅ Analysis Complete', '3 price anomalies detected');
+            }, 2000);
+        }
+
+        function exportReport() {
+            showToast('📤 Report Generated', 'supplier_benchmark_report.pdf');
+        }
+
+        function suggestAlternatives() {
+            showToast('💡 Alternatives Found', '12 competitive suppliers identified');
+        }
+
+        function showToast(title, message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
